@@ -91,30 +91,46 @@ fn main_program(args: Vec<String>, time_travel: bool) -> Result<(), i32> {
         }
     };
 
-    // TODO check two consecutive rows back when time travelling
-    let mut set = HashSet::with_capacity(width as usize);
     let mut rows = Vec::with_capacity(width as usize);
-
+    
     println!("{:01$b}", start.0, width as usize);
-    loop {
-        let old = if time_travel {
-            rows.last().cloned()
-        } else {
-            None
-        };
-        rows.push(start.0.clone());
-        if !set.insert(start.clone()) {
-            break;
+    if time_travel {
+        let mut set = HashSet::with_capacity(width as usize);
+
+        loop {
+            let old = rows.last().cloned();
+            rows.push(start.0.clone());
+            if let Some(old) = old.clone() {
+                if !set.insert((old, start.clone())) {
+                    break;
+                }
+            }
+            if let Some(limit) = limit {
+                if rows.len() >= limit {
+                    break;
+                }
+            }
+
+            start = start.next(width, old);
         }
-        if let Some(limit) = limit {
-            if rows.len() >= limit {
+    } else {
+        let mut set = HashSet::with_capacity(width as usize);
+
+        loop {
+            rows.push(start.0.clone());
+            if !set.insert(start.clone()) {
                 break;
             }
-        }
+            if let Some(limit) = limit {
+                if rows.len() >= limit {
+                    break;
+                }
+            }
 
-        start = start.next(width, old);
+            start = start.next(width, None);
+        }
     }
-    drop(set);
+
     println!("length: {}", rows.len());
     let mut img = GrayImage::new(width as u32, rows.len() as u32);
 
